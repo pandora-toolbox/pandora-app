@@ -1,0 +1,4 @@
+g_str: generic string
+g_quoted_str: "generic quoted string"
+g_int: 1
+g_float: 1.2
