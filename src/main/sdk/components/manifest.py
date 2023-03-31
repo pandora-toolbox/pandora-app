@@ -66,7 +66,7 @@ class Manifest(Serializable):
         return str(sys.version).replace("\n", "")
 
     def __str__(self):
-        template = "{app}\n" \
+        template = "\n{app}\n" \
                    "{preferences}" \
                    ".. Runtime: {runtime}\n" \
                    ".. Pandora API version: {api_version}\n" \

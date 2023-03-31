@@ -9,7 +9,7 @@ class TestObjectContainer(unittest.TestCase):
         container: ObjectPool = ObjectPool()
 
         self.assertTrue(container is not None)
-        self.assertDictEqual(container.objects, {})
+        self.assertDictEqual(container.loggers, {})
 
     def test_add_obj(self):
 
@@ -22,7 +22,7 @@ class TestObjectContainer(unittest.TestCase):
         container.clear()
 
     def test_inject(self):
-        from src.main.app.components.object_pool import inject
+        from src.main.sdk.components.object_pool import inject
 
         @inject
         def injected_method(generic_value: str = None):

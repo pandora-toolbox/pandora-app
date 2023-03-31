@@ -1,7 +1,7 @@
 import os
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Optional, TextIO, Union
+from typing import Optional, TextIO, Union, List
 
 from src.main.commons.stypes import String
 
@@ -35,6 +35,35 @@ class OS:
             else:
                 raise ValueError("Error while trying to expand Environment Variables: Text is 'None'.")
 
+    class Shell:
+        @staticmethod
+        def run(cmd: str = None, args: List[str] = None,
+                get_output: bool = False) -> Union[str, None]:
+            """
+            Run a command in OS. It uses the `subprocess` library.
+
+            :param cmd: command to be runned
+            :param args: command arguments as a list of strings
+            :param get_output: if the application should return the output
+            :return: the possible output as byte of string
+            """
+            if String.not_empty(cmd):
+                import subprocess
+
+                args.insert(0, cmd)  # add cmd as first parameter of the list
+
+                # Here it is decided wether use `subprocess.check_output` or `subprocess.check_call`
+                # `subprocess.call` were not used because it would be less convenient since
+                # we would need to manually check the return code of each command and handle errors ourselves
+                if get_output is True:
+                    # `subprocess.check_output` is used because we want to capture the output of the command.
+                    # It also has the same error handling as `subprocess.call` (see below)
+                    return subprocess.check_output(args)
+                else:
+                    # `subprocess.check_call` is used to execute a command and raises a CalledProcessError
+                    # exception if the command fails.
+                    subprocess.check_call(args)
+
     class Path:
         @staticmethod
         def exists(path: str = None) -> bool:
@@ -46,3 +75,20 @@ class OS:
             """Return the Absolute Path of the Current Working Directory."""
             import pathlib
             return str(pathlib.Path().resolve())
+
+        @staticmethod
+        def touch(path: str, filename: str) -> str:
+            if String.not_empty(filename) and String.not_empty(path):
+                full_path: str = f"{path}/{filename}"
+                OS.Shell.run("touch", [full_path])
+
+                return full_path
+            else:
+                raise ValueError("Not possible to create a file since 'path' or 'filename' parameter is empty.")
+
+        @staticmethod
+        def mkdir(path: str):
+            if String.not_empty(path):
+                OS.Shell.run("mkdir", ["-p", path])
+            else:
+                raise ValueError("Not possible to create a directory since 'path' parameter is empty.")

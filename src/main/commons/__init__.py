@@ -1,1 +1,1 @@
-from . import *
+from .design_patterns import *
