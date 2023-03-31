@@ -1,10 +1,10 @@
 from typing import Dict
 
-from ..stypes import String
-from .singleton import Singleton
+from src.main.commons.stypes import String
+from src.main.commons.design_patterns.singleton import Singleton
 
 
-class ObjectContainer(metaclass=Singleton):
+class ObjectPool(metaclass=Singleton):
     def __init__(self):
         self.objects: Dict[str, object] = {}
 
@@ -36,7 +36,7 @@ class ObjectContainer(metaclass=Singleton):
         if String.is_empty(key):
             import inspect
 
-            key = ObjectContainer.obj_signature(obj)
+            key = ObjectPool.obj_signature(obj)
 
         self.objects[key] = obj
 
@@ -98,7 +98,7 @@ def inject(f):
             return spec
 
         fields = get_func_fields()  # All function fields definition
-        container: ObjectContainer = ObjectContainer()  # Should be a Singleton :)
+        container: ObjectPool = ObjectPool()  # Should be a Singleton :)
         new_args: tuple = tuple()
 
         # Inject the values based on the field name or in the object signature
@@ -112,7 +112,7 @@ def inject(f):
                     # Check if an object was injected
                     if field["value"] is None:
                         # Try to inject an object based on the signature
-                        field["value"] = container.get(ObjectContainer.obj_signature(field["type"]))
+                        field["value"] = container.get(ObjectPool.obj_signature(field["type"]))
 
                     # Last check if the field was properly populated. If not, raise an error
                     if field["value"] is None:

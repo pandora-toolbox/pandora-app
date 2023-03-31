@@ -1,12 +1,12 @@
-from src.main.commons.integrations import OS
 from .components.manifest import Manifest
-from ..commons.design_patterns.object_container import ObjectContainer
+from .components.object_pool import ObjectPool
+from ..commons.integrations import OS
 from ..commons.serialization import Serializable
 
 
 class PandoraApp(Serializable):
     manifest: Manifest = Manifest
-    obj_container: ObjectContainer = ObjectContainer
+    obj_pool: ObjectPool = ObjectPool
 
     def __init__(self):
         super().__init__(**AppRuntimeConfig().config())
@@ -23,7 +23,7 @@ class AppRuntimeConfig:
         self.__app_home: str = OS.Environment.var("PANDORA_HOME")
 
     def config(self):
-        self.resolve_object_container() \
+        self.resolve_object_pool() \
             .resolve_app_manifest()
 
         return self.__app_dict
@@ -37,11 +37,9 @@ class AppRuntimeConfig:
 
         self.__app_dict["manifest"] = manifest
 
-        print(manifest)
-
         return self
 
-    def resolve_object_container(self):
-        self.__app_dict["obj_container"] = ObjectContainer()
+    def resolve_object_pool(self):
+        self.__app_dict["obj_container"] = ObjectPool()
 
         return self
