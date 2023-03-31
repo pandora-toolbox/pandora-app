@@ -4,12 +4,11 @@ app:
   description: Pandora Toolbox CLI is an automation and integration tool for small tasks.
   authors:
     - Artemis Resende (contact@aresende.com)
-  command: self
+  command: pandora
   version: 0.0.1-alpha
-preferences:  # TODO: Implement This
+preferences:
   command_delay: 0.1
   lang: en_US.utf-8
   environment: ${PANDORA_RUNTIME_ENV}
-plugin_repositories:  # TODO: Implement this
-  local:
-    address: ${PANDORA_HOME}/data/plugins
+repositories:
+  - ${PANDORA_HOME}/data/plugins

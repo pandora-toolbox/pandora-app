@@ -1,40 +1,52 @@
-import sys
 from typing import List, Optional
 
-from ...commons.stypes import String
 from ...commons.serialization import Serializable, YAML
+from ...commons.stypes import String
 
 
 class AppManifest(Serializable):
-    __instance = None
-    __root_dir: str = None
-
-    name: String = String()
-    description: String = String()
-    authors: List[String] = String()
-    command: String = String()
-    version: String = String()
+    name: str = String.EMPTY
+    description: str = String.EMPTY
+    authors: List[str] = []
+    command: str = String.EMPTY
+    version: str = String.EMPTY
 
     def __str__(self):
         cls_template = \
-            ".-== [ {app_name} v{version} ] ==-.\n" \
-            "~~ {app_desc}\n\n" \
-            ":: Authors: {authors}\n" \
-            ":: Runtime: Python {runtime_version}"
+            ":: App '{app_name}' (v{version})\n" \
+            ".. Description: {app_desc}\n" \
+            ".. Authors: {authors}\n" \
+            ".. Command: '{command}'"
 
         return cls_template.format(app_name=self.name, app_desc=self.description,
-                                   version=self.version, authors=self.authors,
-                                   runtime_version=str(sys.version).replace("\n", ""))
+                                   version=self.version, authors=self.authors, command=self.command)
 
 
 class AppPreferences(Serializable):
-    pass
+    command_delay: int
+    lang: str
+    environment: str
+
+    def __str__(self):
+        cls_template = \
+            ".. Command Delay: {delay}ms\n" \
+            ".. Language: {lang}\n" \
+            ".. Environment: '{env}'"
+
+        return cls_template.format(delay=self.command_delay,
+                                   lang=self.lang,
+                                   env=self.environment)
 
 
 class Manifest(Serializable):
-    api_version: str
-    app: AppManifest
-    preferences: AppPreferences
+    api_version: str = String.EMPTY
+    app: AppManifest = AppManifest
+    preferences: AppPreferences = AppPreferences
+    repositories: List[str] = []
+
+    def __init__(self, **entries):
+        if entries is not None and len(entries) > 0:
+            super().__init__(**entries)
 
     @staticmethod
     def load(path: str):
@@ -42,11 +54,27 @@ class Manifest(Serializable):
 
         if String.not_empty(path):
             manifest_file: str = "{}/manifest.yml".format(path)
-            manifest = YAML.deserialize(manifest_file, Manifest)
+            manifest = YAML.load(manifest_file, Manifest)
         else:
             raise ValueError(f"Manifest File could not be loaded because provided path is empty.")
 
         return manifest
 
+    @property
+    def runtime(self):
+        import sys
+        return str(sys.version).replace("\n", "")
+
     def __str__(self):
-        return str(self.__dict__)
+        template = "{app}\n" \
+                   "{preferences}" \
+                   ".. Runtime: {runtime}\n" \
+                   ".. Pandora API version: {api_version}\n" \
+                   ".. Plugin Repositories: {plugins}"
+
+        return template.format(
+            app=str(self.app),
+            preferences=str(self.preferences),
+            runtime=self.runtime,
+            api_version=self.api_version,
+            plugins=str(self.repositories))
