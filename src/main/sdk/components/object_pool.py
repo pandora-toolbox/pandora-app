@@ -1,10 +1,11 @@
-from typing import Dict
+from functools import wraps
+from typing import Dict, Optional
 
-from ..stypes import String
-from .singleton import Singleton
+from src.main.commons.design_patterns.singleton import Singleton
+from src.main.commons.stypes import String
 
 
-class ObjectContainer(metaclass=Singleton):
+class ObjectPool(metaclass=Singleton):
     def __init__(self):
         self.objects: Dict[str, object] = {}
 
@@ -14,8 +15,11 @@ class ObjectContainer(metaclass=Singleton):
         if object is not None:
             import inspect
 
-            module_name: str = inspect.getmodule(obj).__name__
-            obj_name: str = obj.__name__ if isinstance(obj, type) else type(obj).__name__
+            try:
+                module_name: str = inspect.getmodule(obj).__name__
+                obj_name: str = obj.__name__ if isinstance(obj, type) else type(obj).__name__
+            except AttributeError:
+                raise ValueError("Object to be injected is not a class and does not have a key associated.")
 
             return f"{module_name}.{obj_name}"
 
@@ -36,11 +40,12 @@ class ObjectContainer(metaclass=Singleton):
         if String.is_empty(key):
             import inspect
 
-            key = ObjectContainer.obj_signature(obj)
+            key = ObjectPool.obj_signature(obj)
 
-        self.objects[key] = obj
+        if self.get(key) is None:
+            self.objects[key] = obj
 
-    def get(self, key: str):
+    def get(self, key: str) -> Optional[any]:
         """Get an element from the Object Container"""
         element: object = None
 
@@ -59,7 +64,7 @@ class ObjectContainer(metaclass=Singleton):
         return str(self.__dict__)
 
 
-def inject(f):
+def inject(function):
     """
     Allow a Dependency Injection to methods based on:
     * parameter name (should be equals to an object key in the ObjectContainer)
@@ -68,15 +73,15 @@ def inject(f):
     """
     from functools import wraps
 
-    @wraps(f)
-    def wrapper(*args, **kwds):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
         def get_func_fields() -> dict:
             """Get the argument definition of the function that needs to have values injected"""
             from inspect import FullArgSpec, getfullargspec
             from collections import OrderedDict
             import itertools
 
-            f_arg_spec: FullArgSpec = getfullargspec(f)
+            f_arg_spec: FullArgSpec = getfullargspec(function)
 
             spec: OrderedDict = OrderedDict()
             # `itertools.zip_longest` is used because it is possible to have more fields declared (`f_arg_spec.args`)
@@ -98,7 +103,7 @@ def inject(f):
             return spec
 
         fields = get_func_fields()  # All function fields definition
-        container: ObjectContainer = ObjectContainer()  # Should be a Singleton :)
+        container: ObjectPool = ObjectPool()  # Should be a Singleton :)
         new_args: tuple = tuple()
 
         # Inject the values based on the field name or in the object signature
@@ -112,7 +117,7 @@ def inject(f):
                     # Check if an object was injected
                     if field["value"] is None:
                         # Try to inject an object based on the signature
-                        field["value"] = container.get(ObjectContainer.obj_signature(field["type"]))
+                        field["value"] = container.get(ObjectPool.obj_signature(field["type"]))
 
                     # Last check if the field was properly populated. If not, raise an error
                     if field["value"] is None:
@@ -121,5 +126,24 @@ def inject(f):
             # Add the field value in an ordered way to be used as a function argument
             new_args += (field["value"],)
 
-        return f(*new_args, **kwds)
+        return function(*new_args, **kwargs)
+
+    return wrapper
+
+
+def resource(function):
+    """Adds a class-object returned from a function to ObjectPool. Does not support custom keys."""
+
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        result = function(*args, **kwargs)
+
+        if result is not None:
+            ObjectPool().add(result)
+        else:
+            # TODO: add logger here
+            pass
+
+        return result
+
     return wrapper
