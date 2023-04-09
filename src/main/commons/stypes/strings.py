@@ -47,3 +47,14 @@ class String:
 
         letters = string.ascii_lowercase
         return ''.join(random.choice(letters) for i in range(length))
+
+    @staticmethod
+    def wrap(function):
+        """Wrap a class as String. Useful for use with property decorator"""
+        from functools import wraps
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            return str(function(*args, **kwargs))
+
+        return wrapper

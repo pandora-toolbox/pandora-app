@@ -2,12 +2,10 @@ import logging
 from logging import Logger
 from typing import Dict, Optional
 
-from .constants import Constant
-from .manifest import Manifest
+from ..models import Constants, Manifest
 from .object_pool import inject
-from ..environments.appenv import AppEnvironment
-from ...commons import Singleton
-from ...commons.stypes import String
+from ..environments import AppEnvironment
+from ...commons import Singleton, String
 
 
 class LoggerPool(metaclass=Singleton):
@@ -40,7 +38,7 @@ class LoggerPool(metaclass=Singleton):
                 logger.addHandler(stdout_handler)
 
             # Setup File Handler
-            file_path: str = f"{OS.Environment.var(Constant.home)}/data/logs"
+            file_path: str = f"{Constants.home}/data/logs"
             filename: str = f"{name}.log"
 
             if not OS.Path.exists(file_path):

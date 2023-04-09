@@ -1,7 +1,7 @@
 from enum import Enum
 
 from ...commons.stypes import String
-from ..components import ObjectPool
+from ..pools import ObjectPool
 
 
 class AppEnvironment(Enum):

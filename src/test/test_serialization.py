@@ -16,7 +16,7 @@ class TestYAMLSerialization(unittest.TestCase):
         self.assertEqual(generic_obj.g_float, 1.2)
 
     def test_YAML_class_deserialization(self):
-        from src.main.sdk.components.manifest import Manifest
+        from src.main.sdk.models.manifest import Manifest
 
         file: str = f"{OS.Environment.var('PANDORA_HOME')}/manifest.yml"
         manifest: Manifest = YAML.load(file, Manifest)

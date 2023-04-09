@@ -1,11 +1,12 @@
 from logging import Logger
+from typing import List
 
-from .components.constants import Constant
-from .components.logger_pool import LoggerPool
-from .components.manifest import Manifest
-from .components.object_pool import ObjectPool, resource
+from .cli.parser import CLI
 from .environments.appenv import AppEnvironment
-from ..commons.integrations import OS
+from .models import Constants, Manifest
+from .plugins.management import PluginContainer
+from .pools import ObjectPool, resource
+from .pools.logger_pool import LoggerPool
 from ..commons.serialization import Serializable
 
 
@@ -15,29 +16,32 @@ class PandoraApp(Serializable):
     manifest: Manifest = Manifest
     objects: ObjectPool = ObjectPool
     loggers: LoggerPool = LoggerPool
+    plugins: PluginContainer = PluginContainer
 
     def __init__(self):
         super().__init__(**AppRuntimeConfig().config())
-        self.logger.warning(self.manifest)
+
+    def run(self, args: List[str]) -> object:
+        command, nargs = CLI(self.plugins.cmd_tree).parse(args)
+
+        return self.plugins.exec(command, args)
 
 
 class AppRuntimeConfig:
     """
     Configure the application in a Runtime Level, resolving object dependencies, loading environment variables, etc.
     """
-    def __init__(self):
-        OS.Environment.load_vars(f"{OS.Path.cwd()}/.env")
-
     def config(self):
         return {
             "objects": ObjectPool(),
             "manifest": self.manifest(),
-            "loggers": LoggerPool()
+            "loggers": LoggerPool(),
+            "plugins": self.plugins()
         }
 
     @resource
     def manifest(self):
-        home = OS.Environment.var(Constant.home)
+        home = Constants.home
         manifest: Manifest = Manifest.load(home)
 
         if manifest.api_version != "1":
@@ -47,3 +51,9 @@ class AppRuntimeConfig:
         ObjectPool().add(key=str(AppEnvironment.oid), obj=manifest.preferences.environment)
 
         return manifest
+
+    @resource
+    def plugins(self):
+        from src.main.sdk.plugins.management import PluginContainer
+
+        return PluginContainer()

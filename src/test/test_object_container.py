@@ -22,7 +22,7 @@ class TestObjectContainer(unittest.TestCase):
         container.clear()
 
     def test_inject(self):
-        from src.main.sdk.components.object_pool import inject
+        from src.main.sdk.pools.object_pool import inject
 
         @inject
         def injected_method(generic_value: str = None):

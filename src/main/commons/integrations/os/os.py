@@ -2,8 +2,9 @@ import os
 from io import TextIOWrapper
 from pathlib import Path
 from typing import Optional, TextIO, Union, List
+import re
 
-from src.main.commons.stypes import String
+from ...stypes import String, Collection
 
 
 # noinspection PyTypeChecker
@@ -92,3 +93,40 @@ class OS:
                 OS.Shell.run("mkdir", ["-p", path])
             else:
                 raise ValueError("Not possible to create a directory since 'path' parameter is empty.")
+
+        # noinspection PyTypeChecker
+        @staticmethod
+        def subdirs(path: str, recursive: bool = False) -> List[str]:
+            if String.not_empty(path):
+                directories: List[str] = [dirs for subdir, dirs, files in os.walk(path)]
+
+                if Collection.not_empty(directories):
+                    valid_dirs: List[str] = directories[0]
+                    for subdir in valid_dirs:
+                        if re.search(".*__.*__", str(subdir)) is not None:
+                            valid_dirs.remove(subdir)
+
+                        if recursive is True:
+                            if path.startswith("/"):
+                                full_path = path
+                            elif path.endswith("/"):
+                                full_path = f"{path}{subdir}"
+                            else:
+                                full_path = f"{path}/{subdir}"
+
+                            sub_directories = OS.Path.subdirs(full_path, recursive=True)
+                            valid_dirs.extend(sub_directories)
+
+                    if path.endswith("/"):
+                        return [f"{path}{subdir}" for subdir in directories[0]] or []
+                    else:
+                        return [f"{path}/{subdir}" for subdir in directories[0]] or []
+
+        @staticmethod
+        def files(path: str) -> List[str]:
+            if String.not_empty(str(path)):
+                __files: List = [files for subdir, dirs, files in os.walk(path)]
+                if Collection.not_empty(__files):
+                    return ["{}/{}".format(path, subdir) for subdir in __files[0]] or []
+                else:
+                    return []

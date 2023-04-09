@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from ...commons.serialization import Serializable, YAML
-from ...commons.stypes import String
+from src.main.commons.serialization import Serializable, YAML
+from src.main.commons.stypes import String
 
 
 class AppManifest(Serializable):
@@ -42,7 +42,7 @@ class Manifest(Serializable):
     api_version: str = String.EMPTY
     app: AppManifest = AppManifest
     preferences: AppPreferences = AppPreferences
-    repositories: List[str] = []
+    collections: List[str] = []
 
     def __init__(self, **entries):
         if entries is not None and len(entries) > 0:
@@ -58,6 +58,8 @@ class Manifest(Serializable):
         else:
             raise ValueError(f"Manifest File could not be loaded because provided path is empty.")
 
+        # TODO: Improve manifest validation
+
         return manifest
 
     @property
@@ -70,11 +72,11 @@ class Manifest(Serializable):
                    "{preferences}" \
                    ".. Runtime: {runtime}\n" \
                    ".. Pandora API version: {api_version}\n" \
-                   ".. Plugin Repositories: {plugins}"
+                   ".. Plugin Collections: {plugins}"
 
         return template.format(
             app=str(self.app),
             preferences=str(self.preferences),
             runtime=self.runtime,
             api_version=self.api_version,
-            plugins=str(self.repositories))
+            plugins=str(self.collections))

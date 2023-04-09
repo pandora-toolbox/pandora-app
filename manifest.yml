@@ -10,5 +10,5 @@ preferences:
   command_delay: 0.1
   lang: en_US.utf-8
   environment: ${PANDORA_RUNTIME_ENV}
-repositories:
+collections:
   - ${PANDORA_HOME}/data/plugins
