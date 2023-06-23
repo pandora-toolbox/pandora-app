@@ -5,7 +5,7 @@ from pandora.commons.serialization import Serializable
 from pandora.toolbox.sdk.cli.parser import CLI
 from pandora.toolbox.sdk.config.appconfig import AppConfiguration
 from pandora.toolbox.sdk.models import AppManifest
-from pandora.toolbox.sdk.plugins import PluginService
+from pandora.toolbox.sdk.services import PluginService
 from pandora.toolbox.sdk.pools import ObjectPool, LoggerPool
 
 
@@ -21,7 +21,6 @@ class ToolboxApp(Serializable):
     cli: CLI = CLI
 
     def __init__(self):
-        # self.logger: Logger = LoggerPool.get(self.__class__)
         self.logger: Logger = LoggerPool.root()
         self.logger.info("Initializing ToolboxApplication...")
 
@@ -40,4 +39,4 @@ class ToolboxApp(Serializable):
         """
         command, nargs = self.cli.parse(args)
 
-        return self.plugins.exec(command, args)
+        return self.plugins.exec(command, nargs)

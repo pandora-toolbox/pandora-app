@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable
 
 from pandora.commons import String
 from pandora.toolbox.sdk.models import Command
@@ -7,7 +7,7 @@ from pandora.toolbox.sdk.models.plugin import Plugin
 
 class RuntimeSecurityContainer:
     @staticmethod
-    def exec(command: Command, args: List[str]):
+    def exec(handler: Callable, args: List[str]):
         pass
 
     @classmethod

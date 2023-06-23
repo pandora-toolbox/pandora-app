@@ -1,8 +1,7 @@
 from enum import Enum
-from typing import List, Callable, Optional
+from typing import List, Optional
 
 from pandora.commons.serialization import Serializable
-from pandora.toolbox.sdk.models.arguments import PluginRuntimeArguments
 
 
 class ArgumentType(Enum):
@@ -54,11 +53,12 @@ class Command(Serializable):
     def __init__(self,
                  name: str,
                  help: str,
-                 handler: Callable = None,
+                 handler: str = None,
                  arguments: list = None):
         self.name = name
         self.help: str = help
-        self.handler: Callable = handler
+        # self.handler: Callable = handler
+        self.handler: str = handler
         self.arguments: List[CommandArgument] = []
 
         # Workaround to [Issue #4](https://gitlab.com/dev.artemisia/pandora-toolbox/pandora-app/-/issues/4)

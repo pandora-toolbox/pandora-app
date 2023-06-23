@@ -4,7 +4,7 @@ from typing import Optional
 from pandora.toolbox.sdk.cli.parser import CLI
 from pandora.toolbox.sdk.constants import Constants
 from pandora.toolbox.sdk.models import AppManifest
-from pandora.toolbox.sdk.plugins import PluginService
+from pandora.toolbox.sdk.services import PluginService
 from pandora.toolbox.sdk.pools import ObjectPool, LoggerPool
 from pandora.toolbox.sdk.services.environments import AppEnvironment
 

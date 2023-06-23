@@ -4,7 +4,7 @@ from typing import List, Optional
 from pandora.commons import Tree, String
 from pandora.toolbox.sdk.cli.parser import CLI
 from pandora.toolbox.sdk.models import Command
-from pandora.toolbox.sdk.models.plugin import Plugin, PluginCollections, Plugins
+from pandora.toolbox.sdk.models.plugin import Plugin, PluginCollections, Plugins, Module
 from pandora.toolbox.sdk.services import PluginDiscoveryService
 from pandora.toolbox.sdk.services import PluginExecutionRuntime
 
@@ -35,8 +35,7 @@ class PluginService:
             raise ValueError("Not possible to parse Plugins into CLI interface since Plugin Command Tree is 'None'.")
 
     def exec(self, cmd_name: str, args: List[str]) -> Optional[object]:
-        # output = None
-        output = self.collections
+        output: object = None
 
         if String.not_empty(cmd_name):
             command: Optional[Command]
@@ -44,7 +43,9 @@ class PluginService:
 
             command, plugin = self.get(cmd_name)
 
-            output = PluginExecutionRuntime.exec(command, plugin, args)
+            # TODO: Parse List of args to a valid object
+
+            output = PluginExecutionRuntime.exec(command, plugin, None)
 
         return output
 
@@ -55,12 +56,15 @@ class PluginService:
         from pandora.commons.stypes.collections.tree import Node
 
         node: Node
-        plugin: Plugin
+        plugin: Optional[Plugin] = None
 
+        # Identify the plugin based on the command
         for node in self.cmd_tree.walk_forward():
             if node and type(node.data) == Plugin:
                 plugin = node.data
+                break
 
-                return plugin.command(cmd_name), plugin
+        # Get the command object and the module
+        command = plugin.command(cmd_name)
 
-        return None
+        return command, plugin

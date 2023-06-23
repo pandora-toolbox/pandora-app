@@ -9,7 +9,6 @@ from pandora.toolbox.sdk.models.command import Command
 
 
 class Module:
-    # TODO: Re-do module loading based on CommandV2
     """
     Represents and defines a Pandora Toolbox Plugin Module.
     """
@@ -64,14 +63,12 @@ class Module:
         else:
             self.__path = new_path
 
-    @property
-    def plugin(self):
+    def load(self):
         """
-        Pre-load the Python Plugin from Module defined at `handle.py` file.
-        :return: Plugin Object if present
+        Load the Python Plugin from Module.
         """
         self.namespace = DynamicImport.run_module(path=self.path)
-        return self.namespace.resolve_plugin if self.namespace is not None else None
+        return self.namespace
 
 
 class Plugin:
@@ -113,7 +110,7 @@ class Plugin:
 
     def command(self, name: str) -> Optional[Command]:
         """
-        Get a Command Object from the Plugin Command List based on the command name with dashes.
+        Get a Command Object and it Module Path from the Plugin Command List based on the command name with dashes.
 
         @return Command Object if there is a command available or else None
         """
@@ -125,6 +122,7 @@ class Plugin:
                     break
 
         return command
+
 
 
 class PluginCollection:
