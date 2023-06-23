@@ -2,3 +2,4 @@ coverage
 ruamel.yaml
 munch
 python-dotenv
+vllm

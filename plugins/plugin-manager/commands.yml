@@ -1,0 +1,15 @@
+api_version: '1'
+name: plugin-manager
+commands:
+  - name: create-plugin
+    help: Create a new Plugin Collection.
+    handler: manager.create
+    arguments:
+      - name: --name
+        short: -n
+        help: Collection Name
+        required: true
+      - name: --path
+        short: -p
+        help: Collection Path
+        required: true
