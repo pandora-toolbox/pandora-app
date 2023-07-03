@@ -40,3 +40,4 @@ class ToolboxApp(Serializable):
         command, nargs = self.cli.parse(args)
 
         return self.plugins.exec(command, nargs)
+        # pass

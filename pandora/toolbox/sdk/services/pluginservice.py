@@ -1,10 +1,12 @@
 from datetime import datetime
+from logging import Logger
 from typing import List, Optional
 
 from pandora.commons import Tree, String
 from pandora.toolbox.sdk.cli.parser import CLI
 from pandora.toolbox.sdk.models import Command
-from pandora.toolbox.sdk.models.plugin import Plugin, PluginCollections, Plugins, Module
+from pandora.toolbox.sdk.models.plugin import Plugin, PluginCollections, Plugins
+from pandora.toolbox.sdk.pools import LoggerPool
 from pandora.toolbox.sdk.services import PluginDiscoveryService
 from pandora.toolbox.sdk.services import PluginExecutionRuntime
 
@@ -14,17 +16,19 @@ class PluginService:
     plugins: Optional[Plugins]
     cmd_tree: Optional[Tree]
     last_scan: Optional[datetime]
+    logger: Logger
 
     def __init__(self):
         self.collections = None
         self.plugins = None
         self.cmd_tree = None
-        self.last_scan = None
+        self.logger = LoggerPool.get(self.__class__)
 
     def scan(self):
         """
         Scan Plugin Collections using PluginDiscoveryService and register the available Plugins.
         """
+        self.logger.info(f"Scanning plugins...")
         self.last_scan = datetime.now()
         self.collections, self.plugins, self.cmd_tree = PluginDiscoveryService.scan()
 

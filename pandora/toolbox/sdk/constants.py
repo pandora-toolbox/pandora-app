@@ -27,6 +27,12 @@ class Constants:
         def default_plugin_path(cls) -> str:
             return f"{cls.home_path()}/plugins"
 
+        @classmethod
+        @cache
+        def env(cls) -> str:
+            return OS.Environment.var("PANDORA_RUNTIME_ENV")
+
     # Define a property that returns the cached value of the home() method
     HOME_PATH: str = __Values.home_path()
     DEFAULT_PLUGIN_PATH: str = __Values.default_plugin_path()
+    RUNTIME_ENV: str = __Values.env()

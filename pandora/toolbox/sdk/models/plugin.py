@@ -1,3 +1,4 @@
+from logging import Logger
 from types import ModuleType
 from typing import Optional, Union, Dict, Set, List
 
@@ -75,8 +76,12 @@ class Plugin:
     location: str = None
     __manifest: PluginManifest = None
     modules: Set[Module] = None
+    logger: Logger = None
 
     def __init__(self, path: str):
+        from pandora.toolbox.sdk.pools import LoggerPool  # Avoid circular imports
+        self.logger = LoggerPool.get(self.__class__)
+
         if OS.Path.exists(path):
             self.location: str = path
             self.__manifest: PluginManifest = PluginManifest.load(path)
@@ -86,6 +91,7 @@ class Plugin:
 
             # TODO: add signature validation
 
+            self.logger.debug(f"['{self.__manifest.name}'] Scanning all Python Modules present at '{path}'.")
             self.modules: Set[Module] = set()
 
             for file in OS.Path.files(path):
@@ -122,7 +128,6 @@ class Plugin:
                     break
 
         return command
-
 
 
 class PluginCollection:

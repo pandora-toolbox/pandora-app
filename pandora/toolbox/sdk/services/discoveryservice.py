@@ -1,45 +1,51 @@
-from datetime import datetime
+from logging import Logger
 from typing import List, Optional
 
 from pandora.commons import String, Singleton, Tree
-from pandora.commons.integrations import OS
-from pandora.toolbox.sdk.models import AppManifest
 from pandora.toolbox.sdk.constants import Constants
+from pandora.toolbox.sdk.models import AppManifest
 from pandora.toolbox.sdk.models.plugin import Plugin, PluginCollection, PluginCollections, Plugins
-from pandora.toolbox.sdk.pools import inject
+from pandora.toolbox.sdk.pools import inject, LoggerPool
 from pandora.toolbox.sdk.services.collectionservice import PluginCollectionService
 
 
 class PluginDiscoveryService(metaclass=Singleton):
-    last_scan: Optional[datetime]
 
     @classmethod
     @inject
     def scan(cls, pandora_app: AppManifest = None) -> (PluginCollections, Plugins, Tree):
-        repositories: List[str] = []  # List of paths that contains collections (repositories)
+        logger: Logger = LoggerPool.get(cls)
+
+        sources: List[str] = []  # List of paths that contains collections (sources)
 
         collections: PluginCollections = {}  # it is a dict :)
         plugins: Plugins = {}  # it is also a dict hehe
+
+        logger.debug("Creating Command Tree based on the App Manifest...")
         command_tree: Tree = Tree(pandora_app)
 
-        cls.last_scan = datetime.now()
+        # Add default collection to sources list if exists
+        logger.debug("Adding Home Path and Default Plugin Path as sources...")
+        sources.append(Constants.HOME_PATH)
+        sources.append(Constants.DEFAULT_PLUGIN_PATH)
 
-        # Add default collection to repositories list if exists
-        repositories.append(Constants.HOME_PATH)
-        repositories.append(Constants.DEFAULT_PLUGIN_PATH)
+        # Add declared collections to sources list
+        logger.debug("Adding declared collections as sources...")
+        sources.extend(pandora_app.collections)
 
-        # Add declared collections to repositories list
-        repositories.extend(pandora_app.collections)
-        repositories = list(set(repositories))
+        # Remove eventual duplicates
+        sources = list(set(sources))
 
         # Load Plugin Repositories as PluginCollection
-        for repo in repositories:
-            if String.not_empty(repo):
-                collection: PluginCollection = PluginCollectionService.load(repo)
+        logger.debug("Scanning Plugin Sources...")
+        for source in sources:
+            if String.not_empty(source):
+                collection: PluginCollection = PluginCollectionService.scan(source)
 
                 if collection is not None:
                     # Add PluginCollection to collections dict
-                    if String.equals(repo, Constants.DEFAULT_PLUGIN_PATH):
+                    logger.debug(f"Adding Plugin Source located at '{source}' as collection.")
+                    if String.equals(source, Constants.DEFAULT_PLUGIN_PATH):
                         key: str = "default"
                     else:
                         key: str = collection.location
@@ -47,6 +53,7 @@ class PluginDiscoveryService(metaclass=Singleton):
                     collections[key] = collection
 
                     # Build part of the Plugin Tree based on the plugins of the loaded collection
+                    logger.debug(f"[Plugin Tree] Incrementing Plugin Tree...")
                     for collection in collections.values():
                         plugin: Plugin
 

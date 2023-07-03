@@ -24,14 +24,13 @@ class AppConfiguration:
         return AppConfiguration()
 
     def load_envvars(self):
-        self.logger.info("Loading '.env' file...")
+        self.logger.debug("Loading '.env' file...")
 
         from dotenv import load_dotenv
 
         load_dotenv(".env")
 
         self.__loaded_vars = True
-        self.logger.info("'.env' file loaded!")
 
         return self
 
@@ -39,7 +38,7 @@ class AppConfiguration:
         """
         Initialize an ObjectPool by generating a Singleton Object.
         """
-        self.logger.info("Initializing ObjectPool...")
+        self.logger.debug("Initializing ObjectPool...")
         self.objects = ObjectPool()
         self.objects.add(self.objects)
 
@@ -60,21 +59,27 @@ class AppConfiguration:
                 raise RuntimeError("In order to load the Application Manifest, "
                                    "some environment variables needs to be configured.")
 
+        self.logger.debug("Loading App Manifest...")
         validate_deps()
 
         home_path: str = Constants.HOME_PATH  # Load Constants
+
+        self.logger.debug(f"Reading manifest file available at '{home_path}'...")
         manifest: AppManifest = AppManifest.load(home_path)  # Load an App Manifest
 
+        self.logger.debug(f"Checking Manifest Version...")
         if manifest.api_version != "1":
             raise ValueError(f"Pandora API Version (api_version) '{manifest.api_version}' is not valid. " +
                              f"(App Home: '{home_path}').")
 
         # Add objects to ObjectPool
+        self.logger.debug(f"Adding manifest to ObjectPool...")
         self.objects.add(key=AppEnvironment.OID.value, obj=manifest.preferences.environment)
         self.objects.add(manifest)
 
         # Add manifest to AppConfiguration
         self.manifest = manifest
+        self.logger.debug(f"App manifest was properly loaded into Application Runtime!")
 
         return self
 
@@ -84,7 +89,9 @@ class AppConfiguration:
         """
         self.plugins = PluginService()
 
+        self.logger.debug(f"Performing Plugin Scan...")
         self.plugins.scan()
+        self.logger.debug(f"Plugin Scan successfully completed.")
 
         return self
 

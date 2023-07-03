@@ -1,98 +1,101 @@
 import logging
+import sys
+from datetime import datetime
 from logging import Logger
 from typing import Dict, Optional
 
-from pandora.commons import Singleton, String
+from pandora.commons import Singleton, String, OS
 from pandora.toolbox.sdk.services.environments import AppEnvironment
 from ..constants import Constants
 
 
+class DefaultFormatter(logging.Formatter):
+    def format(self, record):
+        location = '%s.%s:%s' % (record.name, record.funcName, record.lineno)
+        msg = '[%s] %-40s [%-5s]: %s' % (self.formatTime(record), location, record.levelname, record.msg)
+        record.msg = msg
+        return super(DefaultFormatter, self).format(record)
+
+
 class LoggerPool(metaclass=Singleton):
-    DEFAULT_FORMATTER: logging.Formatter = \
-        logging.Formatter("[%(asctime)s][%(levelname)s] %(filename)s %(funcName)s (at line %(lineno)d): %(message)s")
+    DEFAULT_FORMATTER: logging.Formatter = DefaultFormatter()
 
     loggers: Dict[str, Logger] = {}
 
     @classmethod
     def __create(cls, name=__name__, level=logging.INFO, enable_stdout: bool = False) -> Logger:
-        from pandora.commons import OS
-        import logging
-        import sys
+        formatter: logging.Formatter = LoggerPool.DEFAULT_FORMATTER
+
+        if AppEnvironment.is_dev():
+            level = logging.DEBUG
+            enable_stdout = True
 
         if String.not_empty(name):
             logger = logging.getLogger(name)
-            logger.setLevel(level)
-            formatter = LoggerPool.DEFAULT_FORMATTER
 
-            # If is dev, setup stdout
-            if enable_stdout:
+            logger.setLevel(level)
+            logger.propagate = False  # Avoids the Logger repeating itself when created via init class
+
+            if enable_stdout:  # Setup StreamHandler for console output
                 stdout_handler = logging.StreamHandler(sys.stdout)
-                stdout_handler.setLevel(logging.DEBUG)
+                stdout_handler.setLevel(level)
                 stdout_handler.setFormatter(formatter)
 
                 logger.addHandler(stdout_handler)
 
             # Setup File Handler
-            file_path: str = f"{Constants.HOME_PATH}/data/logs"
-            filename: str = f"{name}.log"
+            if name == "root":
+                file_path: str = f"{Constants.HOME_PATH}/data/logs"
+                filename: str = f"{name}-{datetime.now().isoformat()}.log"
 
-            OS.Path.touch(file_path, filename)
+                OS.Path.touch(file_path, filename)
 
-            file_handler = logging.FileHandler(f"{file_path}/{filename}")
-            file_handler.setLevel(level)
-            file_handler.setFormatter(formatter)
+                file_handler = logging.FileHandler(f"{file_path}/{filename}")
+                file_handler.setLevel(level)
 
-            logger.addHandler(file_handler)
+                logger.addHandler(file_handler)
         else:
             raise ValueError("Unable to setup logger: Logger Name is empty.")
 
         return logger
 
-    @classmethod
-    def __get(cls, name=__name__, level=logging.INFO, enable_stdout: bool = None) -> Logger:
+    @staticmethod
+    def get(cls: type = None, name: str = None, level: int = logging.INFO,
+            enable_stdout: bool = True) -> Logger:
         """
         Get a Logger based on name with the default Log Level as 'INFO'.
         If the Logger does not exist, create a new one.
-        The created Logger will log to file at `${PANDORA_HOME}/data/logs/{name}.log by default and it will log
-        to `stdout` if it is a dev environment (or if it is the root logger)
+        Logs will be redirected to `stdout` in DEBUG level if it is a dev environment.
         """
-        if String.is_empty(name):
-            name = "root"
-
         logger: Optional[Logger] = None
 
-        try:
-            logger = cls.loggers[name]
-        except KeyError:
-            pass
+        if cls is not None:
+            if String.is_empty(name):
+                if isinstance(cls, type):
+                    name = cls.__name__
+                elif isinstance(cls, str):
+                    name = cls
+                else:
+                    raise ValueError(f"Logger Class '{cls}' is not valid.")
+        elif String.is_empty(name):
+            raise ValueError(f"Logger do not have a valid class or name.")
+
+        if String.not_empty(name):
+            try:
+                logger = LoggerPool.loggers[name]
+            except KeyError:
+                pass
+        else:  # Both Logger Class and Name are empty
+            raise ValueError("Logger Name is empty.")
+
 
         if logger is None:
-            if enable_stdout is None:
-                if name == "root":
-                    enable_stdout = True
-                else:
-                    enable_stdout = AppEnvironment.is_dev()
-
             logger = LoggerPool.__create(name=name, level=level,
-                                         enable_stdout=AppEnvironment.is_dev()
-                                         if enable_stdout is None else enable_stdout)
+                                         enable_stdout=enable_stdout)
 
-        cls.loggers[name] = logger
+            LoggerPool.loggers[name] = logger
 
         return logger
-
-    @staticmethod
-    def get(cls: type = None, name=__name__, level=logging.INFO) -> Logger:
-        """
-        Get a Logger based on name with the default Log Level as 'INFO'.
-        If the Logger does not exist, create a new one.
-        The created Logger will log to file at `${PANDORA_HOME}/data/logs/{name}.log by default and it will log
-        to `stdout` if it is a dev environment (or if it is the root logger)
-        """
-        if type(cls) is type and String.is_empty(name):
-            name = cls.__name__
-
-        return LoggerPool.__get(name=name, level=level, enable_stdout=True)
 
     def __str__(self):
         return str(self.__dict__)
@@ -100,8 +103,4 @@ class LoggerPool(metaclass=Singleton):
     @classmethod
     def root(cls, level=logging.WARN) -> Logger:
         """Creates a 'root' Logger"""
-        logger: Logger = LoggerPool.__get(name="root", level=level, enable_stdout=True)
-        cls.loggers["root"] = logger
-
-        return logger
-
+        return LoggerPool.get(name="root", level=level, enable_stdout=True)

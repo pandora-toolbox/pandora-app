@@ -1,5 +1,7 @@
+from logging import Logger
 from typing import List, Optional
 
+from pandora.commons import OS
 from pandora.commons.serialization import Serializable, YAML
 from pandora.commons.stypes import String
 from pandora.toolbox.sdk.models.command import Command
@@ -87,20 +89,32 @@ class PluginManifest(Serializable):
 
     @staticmethod
     def load(path: str):
-        manifest: Optional[PluginManifest]
+        from pandora.toolbox.sdk.pools import LoggerPool  # Avoid circular import
+
+        logger: Logger = LoggerPool.get(name="PluginManifest")
+
+        manifest: Optional[PluginManifest] = None
 
         if String.not_empty(path):
             manifest_file: str = "{}/commands.yml".format(path)
-            manifest = YAML.load(manifest_file, PluginManifest)
+            logger.debug(f"Checking if there is a Plugin Command Manifest at '{path}'.")
+
+            if OS.Path.exists(manifest_file):
+                manifest = YAML.load(manifest_file, PluginManifest)
+
+                logger.debug(f"Plugin Manifest for '{manifest.name}' loaded!")
+            else:
+                logger.debug(f"No Plugin available at '{path}'.")
         else:
             raise ValueError(f"Plugin Manifest File could not be loaded because provided path is empty.")
 
-        # Workaround to [Issue #4](https://gitlab.com/dev.artemisia/pandora-toolbox/pandora-app/-/issues/4)
-        manifest.__commands = manifest.commands
-        manifest.commands = []
+        if manifest is not None:
+            # Workaround to [Issue #4](https://gitlab.com/dev.artemisia/pandora-toolbox/pandora-app/-/issues/4)
+            manifest.__commands = manifest.commands
+            manifest.commands = []
 
-        for cmd in manifest.__commands:
-            manifest.commands.append(Command(**cmd))
+            for cmd in manifest.__commands:
+                manifest.commands.append(Command(**cmd))
 
         return manifest
 
